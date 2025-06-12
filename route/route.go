@@ -51,5 +51,13 @@ func RegisterRoutes(r *gin.Engine) {
 		protected.PUT("/schedules/:id", controller.UpdateSchedule)  
 		protected.DELETE("/schedules/:id", controller.DeleteSchedule) 
 
+		// Reports routes
+		protected.GET("/reports", controller.GetReport)
+
+		// Update Payment
+		protected.PUT("/payments/:id/status", controller.UpdatePaymentStatus)
+		protected.PUT("/payments/:id", controller.UpdatePayment)
+
+		
 	}
 }
