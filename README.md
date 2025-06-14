@@ -12,7 +12,6 @@ FlashBook adalah aplikasi backend sederhana untuk sistem pemesanan layanan photo
 - 📘 Booking System
 - 💳 Upload Bukti Pembayaran
 - 📈 Admin Reports (Income & Top Services)
-- 🔔 Notifikasi untuk user saat payment ditolak
 
 ---
 
