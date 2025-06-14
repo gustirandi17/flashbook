@@ -26,9 +26,11 @@ FlashBook adalah aplikasi backend sederhana untuk sistem pemesanan layanan photo
 
 ---
 
-## 📦 API Documentation
+## 📄 Dokumentasi API
 
-> Link Postman : https://documenter.getpostman.com/view/40938878/2sB2x6nY9K
+Klik untuk melihat dokumentasi lengkap di Postman:
+
+👉 [🔗 Lihat Dokumentasi API FlashBook di Postman](https://documenter.getpostman.com/view/40938878/2sB2x6nY9K)
 
 ---
 
