@@ -21,7 +21,7 @@ FlashBook adalah aplikasi backend sederhana untuk sistem pemesanan layanan photo
 - Go 1.21+
 - Gin Web Framework
 - GORM (ORM)
-- MySQL / MariaDB
+- MySQL
 - JWT Authentication
 - Postman (API Testing)
 
