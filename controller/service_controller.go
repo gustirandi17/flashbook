@@ -1,93 +1,113 @@
 package controller
 
 import (
-	"flashbook/config"
+	// "flashbook/constant"
 	"flashbook/entity"
+	"flashbook/service"
 	"net/http"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 )
 
-func CreateService(c *gin.Context) {
-	role, _ := c.Get("role")
-	if role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin only"})
-		return
-	}
+type ServiceController struct {
+	ServiceService service.ServiceService
+}
 
-	var service entity.Service
-	if err := c.ShouldBindJSON(&service); err != nil {
+func NewServiceController(svc service.ServiceService) *ServiceController {
+	return &ServiceController{
+		ServiceService: svc,
+	}
+}
+
+func (sc *ServiceController) Create(c *gin.Context) {
+	// if c.GetString("role") != constant.RoleAdmin {
+	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Admin only"})
+	// 	return
+	// }
+
+	var input entity.Service
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := config.DB.Create(&service).Error; err != nil {
+	result, err := sc.ServiceService.Create(input)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, service)
+	c.JSON(http.StatusCreated, result)
 }
 
-func GetAllServices(c *gin.Context) {
-	var services []entity.Service
-	if err := config.DB.Find(&services).Error; err != nil {
+func (sc *ServiceController) FindAll(c *gin.Context) {
+	result, err := sc.ServiceService.FindAll()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, services)
+	c.JSON(http.StatusOK, result)
 }
 
-func GetServiceByID(c *gin.Context) {
-	id := c.Param("id")
-	var service entity.Service
-	if err := config.DB.First(&service, id).Error; err != nil {
+func (sc *ServiceController) FindByID(c *gin.Context) {
+	idParam := c.Param("id")
+	idUint, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	result, err := sc.ServiceService.FindByID(uint(idUint))
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Service not found"})
 		return
 	}
-	c.JSON(http.StatusOK, service)
+	c.JSON(http.StatusOK, result)
 }
 
-func UpdateService(c *gin.Context) {
-	role, _ := c.Get("role")
-	if role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin only"})
+func (sc *ServiceController) Update(c *gin.Context) {
+	// if c.GetString("role") != constant.RoleAdmin {
+	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Admin only"})
+	// 	return
+	// }
+
+	idParam := c.Param("id")
+	idUint, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
-	id := c.Param("id")
-	var service entity.Service
-	if err := config.DB.First(&service, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Service not found"})
-		return
-	}
-
-	if err := c.ShouldBindJSON(&service); err != nil {
+	var input entity.Service
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := config.DB.Save(&service).Error; err != nil {
+	result, err := sc.ServiceService.Update(uint(idUint), input)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, service)
+	c.JSON(http.StatusOK, result)
 }
 
-func DeleteService(c *gin.Context) {
-	role, _ := c.Get("role")
-	if role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin only"})
+func (sc *ServiceController) Delete(c *gin.Context) {
+	// if c.GetString("role") != constant.RoleAdmin {
+	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Admin only"})
+	// 	return
+	// }
+
+	idParam := c.Param("id")
+	idUint, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
-	id := c.Param("id")
-	var service entity.Service
-	if err := config.DB.First(&service, id).Error; err != nil {
+	err = sc.ServiceService.Delete(uint(idUint))
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Service not found"})
-		return
-	}
-
-	if err := config.DB.Delete(&service).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Service deleted successfully"})

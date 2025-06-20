@@ -1,13 +1,15 @@
 package entity
 
-import "time"
+import (
+	"time"
+)
 
 type Schedule struct {
-	ID         uint      `gorm:"primaryKey" json:"id"`
-	ServiceID  uint      `json:"service_id"`
-	Date       string    `json:"date"`       // Format: YYYY-MM-DD
-	TimeSlot   string    `json:"time_slot"`  // Format: HH:MM:SS
-	IsBooked   bool      `json:"is_booked"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	ServiceID uint      `gorm:"not null;index" json:"service_id"`    // foreign key ke service
+	Date      string    `gorm:"type:text;not null" json:"date"`      // Format: YYYY-MM-DD
+	TimeSlot  string    `gorm:"type:text;not null" json:"time_slot"` // Format: HH:MM:SS
+	IsBooked  bool      `gorm:"default:false" json:"is_booked"`      // default false
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }

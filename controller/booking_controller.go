@@ -1,73 +1,59 @@
 package controller
 
 import (
-	"flashbook/config"
-	"flashbook/entity"
+	// "flashbook/constant"
+	"flashbook/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func CreateBooking(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+type BookingController struct {
+	BookingService service.BookingService
+}
+
+func NewBookingController(s service.BookingService) *BookingController {
+	return &BookingController{BookingService: s}
+}
+
+func (bc *BookingController) CreateBooking(c *gin.Context) {
+	userID := uint(c.GetFloat64("user_id"))
 	var input struct {
 		ScheduleID uint   `json:"schedule_id" binding:"required"`
 		Notes      string `json:"notes"`
 	}
-
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// cek apakah schedule tersedia
-	var schedule entity.Schedule
-	if err := config.DB.First(&schedule, input.ScheduleID).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Schedule not found"})
+	booking, err := bc.BookingService.CreateBooking(userID, input.ScheduleID, input.Notes)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if schedule.IsBooked {
-		c.JSON(http.StatusConflict, gin.H{"error": "Schedule already booked"})
-		return
-	}
-
-	// buat booking baru
-	booking := entity.Booking{
-		UserID:     uint(userID.(float64)),
-		ScheduleID: input.ScheduleID,
-		Status:     "pending",
-		Notes:      input.Notes,
-	}
-	if err := config.DB.Create(&booking).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// tandai schedule sebagai booked
-	schedule.IsBooked = true
-	config.DB.Save(&schedule)
 
 	c.JSON(http.StatusCreated, booking)
 }
 
-func GetMyBookings(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	var bookings []entity.Booking
-	if err := config.DB.Where("user_id = ?", userID).Find(&bookings).Error; err != nil {
+func (bc *BookingController) GetMyBookings(c *gin.Context) {
+	userID := uint(c.GetFloat64("user_id"))
+	bookings, err := bc.BookingService.GetMyBookings(userID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, bookings)
 }
 
-func GetAllBookings(c *gin.Context) {
-	role, _ := c.Get("role")
-	if role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin only"})
-		return
-	}
-	var bookings []entity.Booking
-	if err := config.DB.Find(&bookings).Error; err != nil {
+func (bc *BookingController) GetAllBookings(c *gin.Context) {
+	// role := c.GetString("role")
+	// if role != constant.RoleAdmin {
+	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Admin only"})
+	// 	return
+	// }
+	bookings, err := bc.BookingService.GetAllBookings()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

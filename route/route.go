@@ -5,59 +5,93 @@ import (
 	"flashbook/middleware"
 
 	"github.com/gin-gonic/gin"
+	"flashbook/constant"
 )
 
-func RegisterRoutes(r *gin.Engine) {
+func RegisterRoutes(
+	r *gin.Engine,
+	authController *controller.AuthController,
+	bookingController *controller.BookingController,
+	paymentController *controller.PaymentController,
+	scheduleController *controller.ScheduleController,
+	serviceController *controller.ServiceController,
+	reportController *controller.ReportController,
+) {
+	// Auth routes
 	auth := r.Group("/auth")
 	{
-		auth.POST("/register", controller.Register)
-		auth.POST("/login", controller.Login)
+		auth.POST("/register", authController.Register)
+		auth.POST("/login", authController.Login)
 	}
 
+	// Protected routes (require JWT)
 	protected := r.Group("/")
 	protected.Use(middleware.JWTAuth())
-	{
-		protected.GET("/protected", func(c *gin.Context) {
-			userID, _ := c.Get("user_id")
-			role, _ := c.Get("role")
-			c.JSON(200, gin.H{
-				"message": "Access granted",
-				"user_id": userID,
-				"role":    role,
-			})
+
+	// Public access inside protected route
+	protected.GET("/protected", func(c *gin.Context) {
+		userID, _ := c.Get("user_id")
+		role, _ := c.Get("role")
+		c.JSON(200, gin.H{
+			"message": "Access granted",
+			"user_id": userID,
+			"role":    role,
 		})
+	})
 
-		// Service routes
-		protected.POST("/services", controller.CreateService)
-		protected.GET("/services", controller.GetAllServices)
-		protected.GET("/services/:id", controller.GetServiceByID)
-		protected.PUT("/services/:id", controller.UpdateService)
-		protected.DELETE("/services/:id", controller.DeleteService)
+	// ================== USER ROLE ==================
 
-		// Booking routes
-		protected.POST("/bookings", controller.CreateBooking)
-		protected.GET("/bookings/my", controller.GetMyBookings)
-		protected.GET("/bookings", controller.GetAllBookings)
+	// Bookings (customer access)
+	bookingGroup := protected.Group("/bookings")
+	{
+		bookingGroup.POST("", bookingController.CreateBooking)
+		bookingGroup.GET("/my", bookingController.GetMyBookings)
+	}
 
-		// Payment routes
-		protected.POST("/payments", controller.CreatePayment)
-		protected.GET("/payments/my", controller.GetMyPayments)
-		protected.GET("/payments", controller.GetAllPayments)
+	// Payments (customer access)
+	paymentGroup := protected.Group("/payments")
+	{
+		paymentGroup.POST("", paymentController.CreatePayment)
+		paymentGroup.GET("/my", paymentController.GetMyPayments)
+		paymentGroup.PUT("/:id", paymentController.UpdatePayment)
+	}
 
-		// Schedule routes
-		protected.POST("/schedules", controller.CreateSchedule)     
-		protected.GET("/schedules", controller.GetAllSchedules)      
-		protected.GET("/schedules/:id", controller.GetScheduleByID) 
-		protected.PUT("/schedules/:id", controller.UpdateSchedule)  
-		protected.DELETE("/schedules/:id", controller.DeleteSchedule) 
+	// Schedules (open for all roles)
+	scheduleGroup := protected.Group("/schedules")
+	{
+		scheduleGroup.GET("", scheduleController.GetAllSchedules)
+		scheduleGroup.GET("/:id", scheduleController.GetScheduleByID)
+	}
 
-		// Reports routes
-		protected.GET("/reports", controller.GetReport)
+	// Services (open for all roles)
+	serviceGroup := protected.Group("/services")
+	{
+		serviceGroup.GET("", serviceController.FindAll)
+		serviceGroup.GET("/:id", serviceController.FindByID)
+	}
 
-		// Update Payment
-		protected.PUT("/payments/:id/status", controller.UpdatePaymentStatus)
-		protected.PUT("/payments/:id", controller.UpdatePayment)
+	// ================== ADMIN ROLE ==================
 
-		
+	// Admin-only routes using RBAC middleware
+	admin := protected.Group("/")
+	admin.Use(middleware.RBAC(constant.RoleAdmin))
+	{
+		// Service management
+		admin.POST("/services", serviceController.Create)
+		admin.PUT("/services/:id", serviceController.Update)
+		admin.DELETE("/services/:id", serviceController.Delete)
+
+		// Schedule management
+		admin.POST("/schedules", scheduleController.CreateSchedule)
+		admin.PUT("/schedules/:id", scheduleController.UpdateSchedule)
+		admin.DELETE("/schedules/:id", scheduleController.DeleteSchedule)
+
+		// Booking & Payment management
+		admin.GET("/bookings", bookingController.GetAllBookings)
+		admin.GET("/payments", paymentController.GetAllPayments)
+		admin.PUT("/payments/:id/status", paymentController.UpdatePaymentStatus)
+
+		// Reports
+		admin.GET("/reports", reportController.GetReport)
 	}
 }
